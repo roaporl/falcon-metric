@@ -66,16 +66,18 @@ public class MetricManager {
             String ip = HostHelper.getLocalHostIp();
             String name = Strings.isNullOrEmpty(hostTag) ? ip : ip + ":" + hostTag;
             String tags = System.getProperty(METRICS_TAG);
+            int reportIntervalSeconds = Integer.valueOf(System.getProperty(METRICS_REPORT_INTERVAL, "60"));
+            reportIntervalSeconds = reportIntervalSeconds < 30 ? 30 : reportIntervalSeconds;
             reporter = CounterReporter.forRegistry(metricRegistry)
                     .name(System.getProperty(METRICS_HOST, name))
                     .agentUrl(System.getProperty(PERFCOUNTER_AGENT_NAME, PERFCOUNTER_AGENT))
                     .actualReport(System.getProperty(METRICS_ACTUAL_REPORT, "false").equalsIgnoreCase("true"))
                     .typeSetsMap(genCounterMap(System.getProperty(COUNTER_NAME_MAP, COUNTER_NAME_MAP_DEFAULT)))
                     .tags(tags)
+                    .stepSeconds(reportIntervalSeconds)
                     .enableTag(System.getProperty(METRICS_ENABLE_TAG, "false").equalsIgnoreCase("true"))
                     .build();
-            int reportIntervalSeconds = Integer.valueOf(System.getProperty(METRICS_REPORT_INTERVAL, "60"));
-            reporter.start(reportIntervalSeconds < 30 ? 30 : reportIntervalSeconds, TimeUnit.SECONDS);
+            reporter.start(reportIntervalSeconds, TimeUnit.SECONDS);
         } catch (Exception e) {
             LOGGER.error("CounterReporter started failed : {}", Throwables.getStackTraceAsString(e));
         }

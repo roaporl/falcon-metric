@@ -84,4 +84,16 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>tuniu-reposity</id>
+            <name>Internal Release Repository</name>
+            <url>http://nexus.tuniu.org/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>tuniu-reposity-snapshots</id>
+            <name>Internal Snapshot Repository</name>
+            <url>http://nexus.tuniu.org/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

@@ -29,17 +29,17 @@ public class CounterReporter extends ScheduledReporter {
     public static final String T_HISTOGRAM = "histogram";
 
     public static final String COUNT = "-count";
-    public static final String M_RATE = "-mean-rate";
-    public static final String M1_RATE = "-1-min-rate";
-    public static final String M5_RATE = "-5-min-rate";
-    public static final String M15_RATE = "-15-min-rate";
-    public static final String MEDIAN = "-median-percentile";
-    public static final String P75 = "-75-percentile";
-    public static final String P95 = "-95-percentile";
-    public static final String P99 = "-99-percentile";
-    public static final String P999 = "-999-percentile";
-    public static final String MEAN = "-mean";
-    public static final String STD_DEV = "-stdDev";
+    public static final String M_RATE = "-meanRate-QPS";
+    public static final String M1_RATE = "-1minRate-QPS";
+    public static final String M5_RATE = "-5minRate-QPS";
+    public static final String M15_RATE = "-15minRate-QPS";
+    public static final String MEDIAN = "-median-COST";
+    public static final String P75 = "-75th-COST";
+    public static final String P95 = "-95th-COST";
+    public static final String P99 = "-99th-COST";
+    public static final String P999 = "-999th-COST";
+    public static final String MEAN = "-mean-COST";
+    public static final String STD_DEV = "-stdDev-COST";
     private static final Logger LOGGER = LoggerFactory.getLogger(CounterReporter.class);
     private static final String ENDPOINT = "endpoint";
     private static final String METRIC = "metric";
@@ -53,6 +53,7 @@ public class CounterReporter extends ScheduledReporter {
     private final boolean actualReport;
     private final Map<String, Set<String>> typeSetsMap;
     private final String tags;
+    private final int stepSeconds;
     private final boolean enableTag;
 
     /**
@@ -65,13 +66,14 @@ public class CounterReporter extends ScheduledReporter {
     protected CounterReporter(MetricRegistry registry, String name, String agentUrl, MetricFilter filter,
                               TimeUnit rateUnit, TimeUnit durationUnit, boolean actualReport,
                               Map<String, Set<String>> typeSetsMap,
-                              String tags, boolean enableTag) throws IOException {
+                              String tags, int stepSeconds, boolean enableTag) throws IOException {
         super(registry, name, filter, rateUnit, durationUnit);
         this.name = name;
         this.agentUrl = agentUrl;
         this.actualReport = actualReport;
         this.typeSetsMap = typeSetsMap;
         this.tags = tags;
+        this.stepSeconds = stepSeconds;
         this.enableTag = enableTag;
     }
 
@@ -180,6 +182,7 @@ public class CounterReporter extends ScheduledReporter {
             input.setContentType("application/json");
             postRequest.setEntity(input);
             client.execute(postRequest);
+            LOGGER.debug("Post to {} with gauge counters : {}", agentUrl, content);
         } catch (Exception e) {
             LOGGER.error("Report to agent failed, {}", Throwables.getStackTraceAsString(e));
         } finally {
@@ -199,7 +202,7 @@ public class CounterReporter extends ScheduledReporter {
         }
         json.put(METRIC, metricName);
         json.put(TIMESTAMP, timestamp);
-        json.put(STEP, 60);
+        json.put(STEP, stepSeconds);
         json.put(VALUE, value);
         json.put(COUNTER_TYPE, "GAUGE");
         return json;
@@ -217,6 +220,7 @@ public class CounterReporter extends ScheduledReporter {
         private Map<String, Set<String>> typeSetsMap;
         private boolean enableTag;
         private String tags;
+        private int stepSeconds = 60;
 
         private Builder(MetricRegistry registry) {
             this.registry = registry;
@@ -270,9 +274,14 @@ public class CounterReporter extends ScheduledReporter {
             return this;
         }
 
+        public Builder stepSeconds(int stepSeconds) {
+            this.stepSeconds = stepSeconds;
+            return this;
+        }
+
         public CounterReporter build() throws IOException {
             return new CounterReporter(registry, name, agentUrl, filter, rateUnit, durationUnit, actualReport, typeSetsMap,
-                    tags, enableTag);
+                    tags, stepSeconds, enableTag);
         }
     }
 }
